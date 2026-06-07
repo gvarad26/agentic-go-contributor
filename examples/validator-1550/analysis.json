@@ -1,0 +1,41 @@
+{
+  "repo": "go-playground/validator",
+  "issue_number": 1550,
+  "issue_title": "[Bug]: UUID validation fails for uppercase UUIDs",
+  "base_ref": "b9258bd2b7bbab41c3d99090cac4a659c5f1a60c",
+  "branch": "agent/issue-1550",
+  "analysis": {
+    "summary": "The `uuid`, `uuid3`, `uuid4`, and `uuid5` validation tags reject valid UUIDs that contain uppercase hex digits (A-F). The regex strings for these four validators only allow lowercase hex characters (`[0-9a-f]`), while the corresponding `_rfc4122` variants correctly use `[0-9a-fA-F]`. The documentation in doc.go even acknowledges this as intentional, but the GitHub issue flags it as a bug since UUIDs are case-insensitive by specification.",
+    "issue_type": "bug",
+    "root_cause": "In `regexes.go`, the four constants `uUIDRegexString`, `uUID3RegexString`, `uUID4RegexString`, and `uUID5RegexString` use the character class `[0-9a-f]` (lowercase only), while the RFC4122 counterparts correctly use `[0-9a-fA-F]`. Additionally, `uUID4RegexString` and `uUID5RegexString` use `[89ab]` for the variant nibble instead of `[89abAB]`. This causes the `uuid`, `uuid3`, `uuid4`, and `uuid5` validators to reject uppercase UUIDs.",
+    "relevant_files": [
+      {
+        "path": "regexes.go",
+        "why": "Lines 33-36 define the four broken regex constants that must be updated to include `A-F` (and `AB` for variant nibble in uuid4/uuid5)."
+      },
+      {
+        "path": "doc.go",
+        "why": "Lines 1145, 1151, 1157, and 1163 document 'Uppercase UUID values will not pass' \u2014 these notes must be removed once the fix is applied."
+      },
+      {
+        "path": "validator_test.go",
+        "why": "TestUUIDValidation, TestUUID3Validation, TestUUID4Validation, TestUUID5Validation need new test cases with uppercase UUID strings to cover the fixed behaviour."
+      }
+    ],
+    "plan": [
+      "In `regexes.go`, change `uUIDRegexString` from `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$` to `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`",
+      "In `regexes.go`, change `uUID3RegexString` from `^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$` to `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-3[0-9a-fA-F]{3}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`",
+      "In `regexes.go`, change `uUID4RegexString` from `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$` to `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`",
+      "In `regexes.go`, change `uUID5RegexString` from `^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$` to `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-5[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`",
+      "In `doc.go`, update the descriptions for `uuid`, `uuid3`, `uuid4`, and `uuid5` to remove the 'Uppercase UUID values will not pass' caveat (since they now accept uppercase).",
+      "In `validator_test.go`, add uppercase UUID test cases (expected: true) to TestUUIDValidation, TestUUID3Validation, TestUUID4Validation, and TestUUID5Validation \u2014 e.g. `5ADE1109-1E12-4E46-8E41-EF204C423153` for uuid, matching the format of existing RFC4122 test cases."
+    ],
+    "validation": [
+      "go test ./... (all existing tests must still pass)",
+      "Manually verify: validate.Var(\"5ADE1109-1E12-4E46-8E41-EF204C423153\", \"uuid\") returns nil",
+      "Manually verify: validate.Var(\"A987FBC9-4BED-3078-CF07-9141BA07C9F3\", \"uuid3\") returns nil",
+      "Manually verify: validate.Var(\"57B73598-8764-4AD0-A76A-679BB6640EB1\", \"uuid4\") returns nil",
+      "Manually verify: validate.Var(\"987FBC97-4BED-5078-AF07-9141BA07C9F3\", \"uuid5\") returns nil"
+    ]
+  }
+}

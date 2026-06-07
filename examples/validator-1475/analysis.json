@@ -1,0 +1,30 @@
+{
+  "repo": "go-playground/validator",
+  "issue_number": 1475,
+  "issue_title": "[Bug]: e164 validation allows phone codes starting with +0",
+  "base_ref": "09c1323276ffada71562c1b8bf0554a0ed5ddd1d",
+  "branch": "agent/issue-1475",
+  "analysis": {
+    "summary": "The `e164` validator regex `^\\+[1-9]?[0-9]{7,14}$` uses `[1-9]?` (optional non-zero leading digit), which allows phone numbers like `+0123456789` to pass validation. Because the `[1-9]` is optional, the engine simply skips it and `[0-9]{7,14}` happily matches a digit string starting with `0`, violating the E.164 standard that requires country codes to begin with a non-zero digit.",
+    "issue_type": "bug",
+    "root_cause": "In `regexes.go`, `e164RegexString` is `\"^\\\\+[1-9]?[0-9]{7,14}$\"`. The `?` makes the non-zero leading digit optional, so the regex accepts `+0XXXXXXX\u2026` strings. The correct regex must make that first digit mandatory and non-zero: `\"^\\\\+[1-9][0-9]{6,14}$\"`, which still spans the same total digit range (7\u201315) while rejecting any number whose first digit is `0`.",
+    "relevant_files": [
+      {
+        "path": "regexes.go",
+        "why": "Line 22 defines `e164RegexString = \"^\\\\+[1-9]?[0-9]{7,14}$\"` \u2014 the `[1-9]?` must be changed to `[1-9]` (mandatory) and the subsequent quantifier adjusted from `{7,14}` to `{6,14}` to keep the total digit count at 7\u201315."
+      },
+      {
+        "path": "validator_test.go",
+        "why": "A dedicated `TestE164Validation` function should be added with both valid cases (e.g., `+1123456789`) and invalid cases (e.g., `+0123456789`) to cover this regression."
+      }
+    ],
+    "plan": [
+      "In `regexes.go` line 22, change `e164RegexString` from `\"^\\\\+[1-9]?[0-9]{7,14}$\"` to `\"^\\\\+[1-9][0-9]{6,14}$\"`.",
+      "Add a `TestE164Validation` function in `validator_test.go` that tests valid numbers (e.g. `+1123456789`, `+441234567890`) and invalid numbers (e.g. `+0123456789`, `+`, `123456789`, empty string) using the table-driven pattern already used in the file (like `TestSSNValidation`)."
+    ],
+    "validation": [
+      "go test ./... -run TestE164Validation",
+      "go test ./..."
+    ]
+  }
+}

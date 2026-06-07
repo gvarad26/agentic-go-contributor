@@ -1,0 +1,89 @@
+diff --git a/doc.go b/doc.go
+index dab05be..0ca466f 100644
+--- a/doc.go
++++ b/doc.go
+@@ -1142,25 +1142,25 @@ This validates that a string value contains a valid isbn13 value.
+ 
+ # Universally Unique Identifier UUID
+ 
+-This validates that a string value contains a valid UUID. Uppercase UUID values will not pass - use `uuid_rfc4122` instead.
++This validates that a string value contains a valid UUID.
+ 
+ 	Usage: uuid
+ 
+ # Universally Unique Identifier UUID v3
+ 
+-This validates that a string value contains a valid version 3 UUID.  Uppercase UUID values will not pass - use `uuid3_rfc4122` instead.
++This validates that a string value contains a valid version 3 UUID.
+ 
+ 	Usage: uuid3
+ 
+ # Universally Unique Identifier UUID v4
+ 
+-This validates that a string value contains a valid version 4 UUID.  Uppercase UUID values will not pass - use `uuid4_rfc4122` instead.
++This validates that a string value contains a valid version 4 UUID.
+ 
+ 	Usage: uuid4
+ 
+ # Universally Unique Identifier UUID v5
+ 
+-This validates that a string value contains a valid version 5 UUID.  Uppercase UUID values will not pass - use `uuid5_rfc4122` instead.
++This validates that a string value contains a valid version 5 UUID.
+ 
+ 	Usage: uuid5
+ 
+diff --git a/regexes.go b/regexes.go
+index 8f52743..c48774d 100644
+--- a/regexes.go
++++ b/regexes.go
+@@ -30,10 +30,10 @@ const (
+ 	iSBN10RegexString                = "^(?:[0-9]{9}X|[0-9]{10})$"
+ 	iSBN13RegexString                = "^(?:(?:97(?:8|9))[0-9]{10})$"
+ 	iSSNRegexString                  = "^(?:[0-9]{4}-[0-9]{3}[0-9X])$"
+-	uUID3RegexString                 = "^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$"
+-	uUID4RegexString                 = "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+-	uUID5RegexString                 = "^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+-	uUIDRegexString                  = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
++	uUID3RegexString                 = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-3[0-9a-fA-F]{3}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
++	uUID4RegexString                 = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
++	uUID5RegexString                 = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-5[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
++	uUIDRegexString                  = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+ 	uUID3RFC4122RegexString          = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-3[0-9a-fA-F]{3}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+ 	uUID4RFC4122RegexString          = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+ 	uUID5RFC4122RegexString          = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-5[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+diff --git a/validator_test.go b/validator_test.go
+index f2a92fd..b4bec29 100644
+--- a/validator_test.go
++++ b/validator_test.go
+@@ -4156,6 +4156,7 @@ func TestUUID5Validation(t *testing.T) {
+ 		{"a987fbc9-4bed-3078-cf07-9141ba07c9f3", false},
+ 		{"987fbc97-4bed-5078-af07-9141ba07c9f3", true},
+ 		{"987fbc97-4bed-5078-9f07-9141ba07c9f3", true},
++		{"987FBC97-4BED-5078-AF07-9141BA07C9F3", true},
+ 	}
+ 
+ 	validate := New()
+@@ -4191,6 +4192,7 @@ func TestUUID4Validation(t *testing.T) {
+ 		{"934859", false},
+ 		{"57b73598-8764-4ad0-a76a-679bb6640eb1", true},
+ 		{"625e63f3-58f5-40b7-83a1-a72ad31acffb", true},
++		{"57B73598-8764-4AD0-A76A-679BB6640EB1", true},
+ 	}
+ 
+ 	validate := New()
+@@ -4225,6 +4227,7 @@ func TestUUID3Validation(t *testing.T) {
+ 		{"xxxa987fbc9-4bed-3078-cf07-9141ba07c9f3", false},
+ 		{"a987fbc9-4bed-4078-8f07-9141ba07c9f3", false},
+ 		{"a987fbc9-4bed-3078-cf07-9141ba07c9f3", true},
++		{"A987FBC9-4BED-3078-CF07-9141BA07C9F3", true},
+ 	}
+ 
+ 	validate := New()
+@@ -4281,6 +4284,7 @@ func TestUUIDValidation(t *testing.T) {
+ 		{"987fbc9-4bed-3078-cf07a-9141ba07c9f3", false},
+ 		{"aaaaaaaa-1111-1111-aaag-111111111111", false},
+ 		{"a987fbc9-4bed-3078-cf07-9141ba07c9f3", true},
++		{"5ADE1109-1E12-4E46-8E41-EF204C423153", true},
+ 	}
+ 
+ 	validate := New()

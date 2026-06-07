@@ -1,0 +1,10 @@
+# Cloned repositories and run artifacts
+.work/
+output/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
