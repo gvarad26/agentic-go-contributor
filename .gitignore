@@ -8,3 +8,6 @@ __pycache__/
 .venv/
 venv/
 .env
+
+# Assignment reference (kept local, not part of the submission)
+*.pdf
