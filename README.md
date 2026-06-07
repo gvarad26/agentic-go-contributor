@@ -51,26 +51,46 @@ tree before there's a plan.
 
 ## Setup
 
-Requirements: **Python 3.9+**, **git**, the **`gh` CLI** (authenticated), the
-**Go toolchain** (for real validation), and (recommended) **ripgrep**.
+### Prerequisites
+
+| Tool | Why | Install |
+|------|-----|---------|
+| **Python 3.9+** | runs the agent | preinstalled on macOS/Linux; or python.org |
+| **git** | clone target repos | preinstalled, or `brew install git` / `apt install git` |
+| **Go 1.21+** | real `go build`/`vet`/`test`/`gofmt` validation | `brew install go` / `apt install golang` / go.dev/dl |
+| **`gh` CLI** (authenticated) | fetch issues | `brew install gh` / see cli.github.com, then `gh auth login` |
+| **ripgrep** (recommended) | fast `search_code` (falls back to pure-Python if absent) | `brew install ripgrep` / `apt install ripgrep` |
+
+### Install
 
 ```bash
+git clone https://github.com/gvarad26/agentic-go-contributor.git
 cd agentic-go-contributor
-python3 -m pip install -r requirements.txt      # installs the anthropic SDK
-
-gh auth login                                   # so issues can be fetched
-go version                                       # 1.21+ recommended
+python3 -m pip install -r requirements.txt      # only dependency: the anthropic SDK
 ```
 
-Provide your Anthropic key either via the environment **or a `.env` file** in the
-project root (loaded automatically, stdlib-only — real env vars take precedence):
+### Quick check — no API key needed
+
+Verify the install on any machine by running the offline unit tests:
+
+```bash
+python3 -m unittest discover -s tests           # 19 tests, no network/key
+```
+
+### Provide your Anthropic key (required for a real run)
+
+Either export it, or drop it in a `.env` file in the project root — the agent
+loads `.env` automatically (stdlib only; real environment variables take
+precedence). Any `AGENT_*` setting below can live in `.env` too.
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...             # option A: environment
 echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env      # option B: .env (gitignored)
+gh auth login                                   # so issues can be fetched
 ```
 
-Any `AGENT_*` setting (see below) can also live in `.env`.
+> Run all `python3 -m agent …` commands **from the project root** (so the `agent`
+> package and `.env` are found).
 
 ---
 
@@ -128,12 +148,25 @@ directly to the maintainers' accepted PRs:
 
 Each folder holds the full artifact set (`change.patch`, `pr.md`,
 `analysis.json`, `transcript.md`, `run.log`) plus a `COMPARISON.md` noting how the
-agent's change lines up with the accepted PR. Reproduce a run with:
+agent's change lines up with the accepted PR.
+
+Reproduce either run exactly (the `--base-commit` is the pre-fix tree, so the bug
+is actually present for the agent to fix):
 
 ```bash
+# #1550 — uuid rejects uppercase
 python3 -m agent run 1550 --repo go-playground/validator \
-  --base-commit <base-sha> --output examples/validator-1550
+  --base-commit b9258bd2b7bbab41c3d99090cac4a659c5f1a60c \
+  --output examples/validator-1550
+
+# #1475 — e164 accepts +0
+python3 -m agent run 1475 --repo go-playground/validator \
+  --base-commit 09c1323276ffada71562c1b8bf0554a0ed5ddd1d \
+  --output examples/validator-1475
 ```
+
+> Each run makes real Claude API calls (a few minutes; default model Sonnet).
+> Results vary slightly between runs — the committed artifacts are one such run.
 
 ---
 
@@ -184,12 +217,12 @@ tests/            # unit tests for parsing, repo helpers, and tools
 ## Tests
 
 ```bash
-python3 -m unittest discover -s tests
+python3 -m unittest discover -s tests           # 19 tests, fully offline
 ```
 
-The tests cover issue parsing, the repo map / diff helpers, and every tool
-executor (including the path sandbox and graceful handling of a missing Go
-toolchain) — none require network or an API key.
+The tests cover issue parsing, the repo map / diff helpers, every tool executor
+(including the path sandbox and graceful handling of a missing Go toolchain), and
+the Phase A analysis self-repair fallback — none require network or an API key.
 
 ## Limitations
 
